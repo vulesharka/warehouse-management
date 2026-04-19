@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: warehouse-management
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/warehouse
+    username: postgres
+    password: test
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+app:
+  jwt:
+    secret: d2FyZWhvdXNlLW1hbmFnZW1lbnQtc2VjcmV0LWtleS12ZXJ5LXNlY3VyZQ==
+    expiration: 86400000
+  seed:
+    admin-username: admin
+    admin-email: admin@warehouse.com
+    admin-password: admin123
+    manager-username: manager
+    manager-email: manager@warehouse.com
+    manager-password: manager123
+    client-username: client
+    client-email: client@warehouse.com
+    client-password: client123
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+logging:
+  config: classpath:log4j2.xml
