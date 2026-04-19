@@ -3,6 +3,7 @@ package com.warehouse.controller;
 import com.warehouse.dto.request.OrderRequest;
 import com.warehouse.dto.response.OrderResponse;
 import com.warehouse.dto.response.OrderSummaryResponse;
+import com.warehouse.dto.response.PageResponse;
 import com.warehouse.enums.OrderStatus;
 import com.warehouse.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,14 +12,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -48,10 +50,11 @@ public class OrderController {
         @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
         @ApiResponse(responseCode = "403", description = "Access denied")
     })
-    public ResponseEntity<List<OrderSummaryResponse>> getMyOrders(
+    public ResponseEntity<PageResponse<OrderSummaryResponse>> getMyOrders(
             @RequestParam(required = false) OrderStatus status,
-            @AuthenticationPrincipal UserDetails user) {
-        return ResponseEntity.ok(orderService.getClientOrders(user.getUsername(), status));
+            @AuthenticationPrincipal UserDetails user,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(PageResponse.from(orderService.getClientOrders(user.getUsername(), status, pageable)));
     }
 
     @GetMapping("/{id}")

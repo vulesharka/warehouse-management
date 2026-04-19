@@ -9,10 +9,10 @@ import com.warehouse.repository.InventoryItemRepository;
 import com.warehouse.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +23,8 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryItemMapper inventoryItemMapper;
 
     @Override
-    public List<InventoryItemResponse> getAllItems() {
-        return inventoryItemRepository.findAll().stream().map(inventoryItemMapper::toResponse).toList();
+    public Page<InventoryItemResponse> getAllItems(Pageable pageable) {
+        return inventoryItemRepository.findAll(pageable).map(inventoryItemMapper::toResponse);
     }
 
     @Override

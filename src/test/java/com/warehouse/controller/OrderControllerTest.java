@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
@@ -53,7 +54,7 @@ class OrderControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(orderController)
                 .setControllerAdvice(new GlobalExceptionHandler())
-                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver(), new PageableHandlerMethodArgumentResolver())
                 .build();
         orderResponse = new OrderResponse(1L, "ORD-TEST", OrderStatus.CREATED,
                 null, LocalDateTime.now(), "client", null, List.of());
@@ -94,23 +95,22 @@ class OrderControllerTest {
 
     @Test
     void getMyOrders_returns200WithList() throws Exception {
-        when(orderService.getClientOrders(eq("client"), isNull())).thenReturn(List.of(orderSummary));
+        when(orderService.getClientOrders(eq("client"), isNull(), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(orderSummary)));
 
-        mockMvc.perform(get("/api/orders")
-)
+        mockMvc.perform(get("/api/orders"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].orderNumber").value("ORD-TEST"));
+                .andExpect(jsonPath("$.content[0].orderNumber").value("ORD-TEST"));
     }
 
     @Test
     void getMyOrders_returns200FilteredByStatus() throws Exception {
-        when(orderService.getClientOrders(eq("client"), eq(OrderStatus.CREATED)))
-                .thenReturn(List.of(orderSummary));
+        when(orderService.getClientOrders(eq("client"), eq(OrderStatus.CREATED), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(orderSummary)));
 
-        mockMvc.perform(get("/api/orders")
-.param("status", "CREATED"))
+        mockMvc.perform(get("/api/orders").param("status", "CREATED"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value("CREATED"));
+                .andExpect(jsonPath("$.content[0].status").value("CREATED"));
     }
 
     @Test

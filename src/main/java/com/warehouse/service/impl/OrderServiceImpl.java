@@ -19,6 +19,8 @@ import com.warehouse.service.InventoryService;
 import com.warehouse.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,12 +92,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public List<OrderSummaryResponse> getClientOrders(String username, OrderStatus status) {
+    public Page<OrderSummaryResponse> getClientOrders(String username, OrderStatus status, Pageable pageable) {
         User client = loadUser(username);
-        List<Order> orders = status != null
-                ? orderRepository.findByClientAndStatusOrderByCreatedAtDesc(client, status)
-                : orderRepository.findByClientOrderByCreatedAtDesc(client);
-        return orders.stream().map(orderMapper::toSummary).toList();
+        Page<Order> orders = status != null
+                ? orderRepository.findByClientAndStatusOrderByCreatedAtDesc(client, status, pageable)
+                : orderRepository.findByClientOrderByCreatedAtDesc(client, pageable);
+        return orders.map(orderMapper::toSummary);
     }
 
     @Override
@@ -108,11 +110,11 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public List<OrderSummaryResponse> getAllOrders(OrderStatus status) {
-        List<Order> orders = status != null
-                ? orderRepository.findByStatusSortedBySubmittedDate(status)
-                : orderRepository.findAllSortedBySubmittedDate();
-        return orders.stream().map(orderMapper::toSummary).toList();
+    public Page<OrderSummaryResponse> getAllOrders(OrderStatus status, Pageable pageable) {
+        Page<Order> orders = status != null
+                ? orderRepository.findByStatusSortedBySubmittedDate(status, pageable)
+                : orderRepository.findAllSortedBySubmittedDate(pageable);
+        return orders.map(orderMapper::toSummary);
     }
 
     @Override
@@ -167,8 +169,7 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order", id));
     }
 
-    private Order
-    findOwnedOrder(Long orderId, String username) {
+    private Order findOwnedOrder(Long orderId, String username) {
         User client = loadUser(username);
         return orderRepository.findByIdAndClient(orderId, client)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));

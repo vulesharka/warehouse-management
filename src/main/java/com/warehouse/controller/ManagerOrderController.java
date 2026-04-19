@@ -3,6 +3,7 @@ package com.warehouse.controller;
 import com.warehouse.dto.request.DeclineRequest;
 import com.warehouse.dto.response.OrderResponse;
 import com.warehouse.dto.response.OrderSummaryResponse;
+import com.warehouse.dto.response.PageResponse;
 import com.warehouse.enums.OrderStatus;
 import com.warehouse.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,11 +11,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/manager/orders")
@@ -31,9 +33,10 @@ public class ManagerOrderController {
         @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
         @ApiResponse(responseCode = "403", description = "Access denied")
     })
-    public ResponseEntity<List<OrderSummaryResponse>> getAllOrders(
-            @RequestParam(required = false) OrderStatus status) {
-        return ResponseEntity.ok(orderService.getAllOrders(status));
+    public ResponseEntity<PageResponse<OrderSummaryResponse>> getAllOrders(
+            @RequestParam(required = false) OrderStatus status,
+            @PageableDefault(size = 20, sort = "submittedDate", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(PageResponse.from(orderService.getAllOrders(status, pageable)));
     }
 
     @GetMapping("/{id}")

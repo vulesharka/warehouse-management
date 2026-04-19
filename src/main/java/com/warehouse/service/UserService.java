@@ -2,11 +2,11 @@ package com.warehouse.service;
 
 import com.warehouse.dto.request.UserRequest;
 import com.warehouse.dto.response.UserResponse;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface UserService {
-    List<UserResponse> getAllUsers();
+    Page<UserResponse> getAllUsers(Pageable pageable);
     UserResponse getUserById(Long id);
     UserResponse createUser(UserRequest request);
     UserResponse updateUser(Long id, UserRequest request);

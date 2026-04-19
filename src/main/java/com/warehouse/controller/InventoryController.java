@@ -2,6 +2,7 @@ package com.warehouse.controller;
 
 import com.warehouse.dto.request.InventoryItemRequest;
 import com.warehouse.dto.response.InventoryItemResponse;
+import com.warehouse.dto.response.PageResponse;
 import com.warehouse.service.InventoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -9,12 +10,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/inventory")
@@ -31,8 +33,9 @@ public class InventoryController {
         @ApiResponse(responseCode = "200", description = "Items retrieved successfully"),
         @ApiResponse(responseCode = "403", description = "Access denied")
     })
-    public ResponseEntity<List<InventoryItemResponse>> getAllItems() {
-        return ResponseEntity.ok(inventoryService.getAllItems());
+    public ResponseEntity<PageResponse<InventoryItemResponse>> getAllItems(
+            @PageableDefault(size = 20, sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.ok(PageResponse.from(inventoryService.getAllItems(pageable)));
     }
 
     @GetMapping("/{id}")

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -40,6 +41,7 @@ class InventoryControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(inventoryController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
         itemResponse = new InventoryItemResponse(1L, "Box A", 100,
                 new BigDecimal("9.99"), new BigDecimal("0.5"));
@@ -47,12 +49,12 @@ class InventoryControllerTest {
 
     @Test
     void getAllItems_returns200WithList() throws Exception {
-        when(inventoryService.getAllItems()).thenReturn(List.of(itemResponse));
+        when(inventoryService.getAllItems(any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(itemResponse)));
 
         mockMvc.perform(get("/api/inventory"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Box A"))
-                .andExpect(jsonPath("$[0].quantity").value(100));
+                .andExpect(jsonPath("$.content[0].name").value("Box A"))
+                .andExpect(jsonPath("$.content[0].quantity").value(100));
     }
 
     @Test

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
@@ -47,7 +48,7 @@ class UserControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(userController)
                 .setControllerAdvice(new GlobalExceptionHandler())
-                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver(), new PageableHandlerMethodArgumentResolver())
                 .build();
         userResponse = new UserResponse(1L, "newuser", "new@test.com", Role.CLIENT, null);
         userRequest = new UserRequest("newuser", "new@test.com", "pass123", Role.CLIENT);
@@ -64,12 +65,12 @@ class UserControllerTest {
 
     @Test
     void getAllUsers_returns200WithList() throws Exception {
-        when(userService.getAllUsers()).thenReturn(List.of(userResponse));
+        when(userService.getAllUsers(any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(userResponse)));
 
         mockMvc.perform(get("/api/admin/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].username").value("newuser"))
-                .andExpect(jsonPath("$[0].role").value("CLIENT"));
+                .andExpect(jsonPath("$.content[0].username").value("newuser"))
+                .andExpect(jsonPath("$.content[0].role").value("CLIENT"));
     }
 
     @Test

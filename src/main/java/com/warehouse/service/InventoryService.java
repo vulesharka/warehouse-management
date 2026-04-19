@@ -3,11 +3,11 @@ package com.warehouse.service;
 import com.warehouse.dto.request.InventoryItemRequest;
 import com.warehouse.dto.response.InventoryItemResponse;
 import com.warehouse.entity.InventoryItem;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface InventoryService {
-    List<InventoryItemResponse> getAllItems();
+    Page<InventoryItemResponse> getAllItems(Pageable pageable);
     InventoryItemResponse getItemById(Long id);
     InventoryItemResponse createItem(InventoryItemRequest request);
     InventoryItemResponse updateItem(Long id, InventoryItemRequest request);

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -44,6 +45,7 @@ class ManagerOrderControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(managerOrderController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
         orderResponse = new OrderResponse(1L, "ORD-TEST", OrderStatus.AWAITING_APPROVAL,
                 LocalDateTime.now(), LocalDateTime.now(), "client", null, List.of());
@@ -53,21 +55,21 @@ class ManagerOrderControllerTest {
 
     @Test
     void getAllOrders_returns200WithList() throws Exception {
-        when(orderService.getAllOrders(null)).thenReturn(List.of(orderSummary));
+        when(orderService.getAllOrders(isNull(), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(orderSummary)));
 
         mockMvc.perform(get("/api/manager/orders"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].orderNumber").value("ORD-TEST"))
-                .andExpect(jsonPath("$[0].status").value("AWAITING_APPROVAL"));
+                .andExpect(jsonPath("$.content[0].orderNumber").value("ORD-TEST"))
+                .andExpect(jsonPath("$.content[0].status").value("AWAITING_APPROVAL"));
     }
 
     @Test
     void getAllOrders_returns200FilteredByStatus() throws Exception {
-        when(orderService.getAllOrders(OrderStatus.AWAITING_APPROVAL)).thenReturn(List.of(orderSummary));
+        when(orderService.getAllOrders(eq(OrderStatus.AWAITING_APPROVAL), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(orderSummary)));
 
         mockMvc.perform(get("/api/manager/orders").param("status", "AWAITING_APPROVAL"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value("AWAITING_APPROVAL"));
+                .andExpect(jsonPath("$.content[0].status").value("AWAITING_APPROVAL"));
     }
 
     @Test
