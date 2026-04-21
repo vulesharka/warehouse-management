@@ -1,11 +1,11 @@
 # Warehouse Management System
 
-A RESTful API for managing warehouse inventory and orders, built with Spring Boot 3.
+A RESTful API for managing warehouse inventory, orders, and deliveries, built with Spring Boot 3.
 
 ## Tech Stack
 
 - **Java 21**
-- **Spring Boot 3.4** (Web, Security, Data JPA, Validation)
+- **Spring Boot 3.4** (Web, Security, Data JPA, Validation, Scheduling)
 - **PostgreSQL** — relational database
 - **Flyway** — database migrations
 - **Spring Security + JWT** — stateless authentication
@@ -20,13 +20,13 @@ A RESTful API for managing warehouse inventory and orders, built with Spring Boo
 | Role | Description |
 |------|-------------|
 | `CLIENT` | Creates and manages their own orders |
-| `WAREHOUSE_MANAGER` | Reviews orders, manages inventory |
+| `WAREHOUSE_MANAGER` | Reviews orders, manages inventory, schedules deliveries, manages trucks |
 | `SYSTEM_ADMIN` | Manages users |
 
 ## Order Status Lifecycle
 
 ```
-CREATED → AWAITING_APPROVAL → APPROVED → (Bonus: UNDER_DELIVERY → FULFILLED)
+CREATED → AWAITING_APPROVAL → APPROVED → UNDER_DELIVERY → FULFILLED
                            ↘ DECLINED → AWAITING_APPROVAL
 Any non-final status → CANCELED
 ```
@@ -55,7 +55,9 @@ Any non-final status → CANCELED
 | GET | `/api/manager/orders` | List all orders (filter by status) |
 | GET | `/api/manager/orders/{id}` | Get order detail |
 | POST | `/api/manager/orders/{id}/approve` | Approve order |
-| POST | `/api/manager/orders/{id}/decline` | Decline order |
+| POST | `/api/manager/orders/{id}/decline` | Decline order with optional reason |
+| POST | `/api/manager/orders/{id}/schedule` | Schedule delivery for an approved order |
+| GET | `/api/manager/orders/{id}/available-days` | Get available delivery dates (optional `?days=N`, max 30) |
 
 ### Inventory (WAREHOUSE_MANAGER)
 | Method | Endpoint | Description |
@@ -64,7 +66,16 @@ Any non-final status → CANCELED
 | GET | `/api/inventory/{id}` | Get item |
 | POST | `/api/inventory` | Create item |
 | PUT | `/api/inventory/{id}` | Update item |
-| DELETE | `/api/inventory/{id}` | Delete item |
+| DELETE | `/api/inventory/{id}` | Delete item (blocked if referenced by orders) |
+
+### Trucks (WAREHOUSE_MANAGER)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/manager/trucks` | List all trucks (paginated) |
+| GET | `/api/manager/trucks/{id}` | Get truck |
+| POST | `/api/manager/trucks` | Add a truck |
+| PUT | `/api/manager/trucks/{id}` | Update a truck |
+| DELETE | `/api/manager/trucks/{id}` | Delete a truck (blocked if assigned to a delivery) |
 
 ### Users (SYSTEM_ADMIN)
 | Method | Endpoint | Description |
@@ -74,6 +85,19 @@ Any non-final status → CANCELED
 | POST | `/api/admin/users` | Create user |
 | PUT | `/api/admin/users/{id}` | Update user |
 | DELETE | `/api/admin/users/{id}` | Delete user |
+
+## Delivery Scheduling
+
+When a manager schedules a delivery the following rules are enforced:
+
+- The order must be in `APPROVED` status
+- The delivery date must be a future weekday (no weekends)
+- The date must be within the configured maximum period (default 30 days, configurable via `app.delivery.max-period-days`)
+- Selected trucks must all be available (not assigned to another delivery on the same date)
+- The combined container volume of selected trucks must cover the total package volume of all order items
+- On successful scheduling: inventory quantities are deducted and the order status moves to `UNDER_DELIVERY`
+
+A **daily cron job** runs at midnight and automatically sets orders to `FULFILLED` when their delivery date is reached.
 
 ## Getting Started
 
@@ -86,7 +110,7 @@ Any non-final status → CANCELED
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/warehouse-management.git
+   git clone https://github.com/vulesharka/warehouse-management.git
    cd warehouse-management
    ```
 
