@@ -25,6 +25,8 @@ app:
   jwt:
     secret: d2FyZWhvdXNlLW1hbmFnZW1lbnQtc2VjcmV0LWtleS12ZXJ5LXNlY3VyZQ==
     expiration: 86400000
+  delivery:
+    max-period-days: 30
   seed:
     admin-username: admin
     admin-email: admin@warehouse.com

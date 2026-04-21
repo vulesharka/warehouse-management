@@ -3,15 +3,17 @@ package com.warehouse.service.impl;
 import com.warehouse.dto.request.InventoryItemRequest;
 import com.warehouse.dto.response.InventoryItemResponse;
 import com.warehouse.entity.InventoryItem;
+import com.warehouse.exception.BusinessException;
 import com.warehouse.exception.ResourceNotFoundException;
 import com.warehouse.mapper.InventoryItemMapper;
 import com.warehouse.repository.InventoryItemRepository;
+import com.warehouse.repository.OrderItemRepository;
 import com.warehouse.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -20,11 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class InventoryServiceImpl implements InventoryService {
 
     private final InventoryItemRepository inventoryItemRepository;
+    private final OrderItemRepository orderItemRepository;
     private final InventoryItemMapper inventoryItemMapper;
 
     @Override
-    public Page<InventoryItemResponse> getAllItems(Pageable pageable) {
-        return inventoryItemRepository.findAll(pageable).map(inventoryItemMapper::toResponse);
+    public List<InventoryItemResponse> getAllItems() {
+        return inventoryItemRepository.findAll().stream()
+                .map(inventoryItemMapper::toResponse)
+                .toList();
     }
 
     @Override
@@ -62,6 +67,8 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public void deleteItem(Long id) {
         InventoryItem item = findById(id);
+        if (orderItemRepository.existsByInventoryItemId(id))
+            throw new BusinessException("Cannot delete inventory item '" + item.getName() + "' because it is referenced by existing orders.");
         inventoryItemRepository.delete(item);
         log.info("Deleted inventory item: {}", item.getName());
     }

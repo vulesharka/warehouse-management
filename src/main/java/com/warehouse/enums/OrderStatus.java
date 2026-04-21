@@ -17,9 +17,9 @@ public enum OrderStatus {
     static {
         CREATED.allowed           = EnumSet.of(AWAITING_APPROVAL, CANCELED);
         AWAITING_APPROVAL.allowed = EnumSet.of(APPROVED, DECLINED, CANCELED);
-        APPROVED.allowed          = EnumSet.of(CANCELED);
+        APPROVED.allowed          = EnumSet.of(UNDER_DELIVERY, CANCELED);
         DECLINED.allowed          = EnumSet.of(AWAITING_APPROVAL, CANCELED);
-        UNDER_DELIVERY.allowed    = EnumSet.noneOf(OrderStatus.class);
+        UNDER_DELIVERY.allowed    = EnumSet.of(FULFILLED);
         FULFILLED.allowed         = EnumSet.noneOf(OrderStatus.class);
         CANCELED.allowed          = EnumSet.noneOf(OrderStatus.class);
     }

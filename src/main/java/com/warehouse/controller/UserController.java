@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -36,7 +37,7 @@ public class UserController {
         @ApiResponse(responseCode = "403", description = "Access denied")
     })
     public ResponseEntity<PageResponse<UserResponse>> getAllUsers(
-            @PageableDefault(size = 20, sort = "username", direction = Sort.Direction.ASC) Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 20, sort = "username", direction = Sort.Direction.ASC) Pageable pageable) {
         return ResponseEntity.ok(PageResponse.from(userService.getAllUsers(pageable)));
     }
 
