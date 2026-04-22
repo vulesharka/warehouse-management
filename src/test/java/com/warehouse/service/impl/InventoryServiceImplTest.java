@@ -3,9 +3,11 @@ package com.warehouse.service.impl;
 import com.warehouse.dto.request.InventoryItemRequest;
 import com.warehouse.dto.response.InventoryItemResponse;
 import com.warehouse.entity.InventoryItem;
+import com.warehouse.exception.BusinessException;
 import com.warehouse.exception.ResourceNotFoundException;
 import com.warehouse.mapper.InventoryItemMapper;
 import com.warehouse.repository.InventoryItemRepository;
+import com.warehouse.repository.OrderItemRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,6 +26,7 @@ import static org.mockito.Mockito.*;
 class InventoryServiceImplTest {
 
     @Mock InventoryItemRepository inventoryItemRepository;
+    @Mock OrderItemRepository orderItemRepository;
     @Mock InventoryItemMapper inventoryItemMapper;
 
     @InjectMocks InventoryServiceImpl inventoryService;
@@ -61,10 +64,23 @@ class InventoryServiceImplTest {
     void deleteItem_deletesSuccessfully() {
         InventoryItem item = InventoryItem.builder().id(1L).name("Box A").build();
         when(inventoryItemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(orderItemRepository.existsByInventoryItemId(1L)).thenReturn(false);
 
         inventoryService.deleteItem(1L);
 
         verify(inventoryItemRepository).delete(item);
+    }
+
+    @Test
+    void deleteItem_throwsWhenReferencedByOrder() {
+        InventoryItem item = InventoryItem.builder().id(1L).name("Box A").build();
+        when(inventoryItemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(orderItemRepository.existsByInventoryItemId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> inventoryService.deleteItem(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Box A");
+        verify(inventoryItemRepository, never()).delete(any());
     }
 
     @Test

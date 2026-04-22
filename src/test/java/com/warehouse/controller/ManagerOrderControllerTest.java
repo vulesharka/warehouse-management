@@ -3,12 +3,18 @@ package com.warehouse.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.warehouse.dto.request.DeclineRequest;
+import com.warehouse.dto.request.ScheduleDeliveryRequest;
+import com.warehouse.dto.response.AvailableDaysResponse;
+import com.warehouse.dto.response.DeliveryResponse;
 import com.warehouse.dto.response.OrderResponse;
 import com.warehouse.dto.response.OrderSummaryResponse;
+import com.warehouse.dto.response.TruckResponse;
 import com.warehouse.enums.OrderStatus;
+import com.warehouse.exception.BusinessException;
 import com.warehouse.exception.GlobalExceptionHandler;
 import com.warehouse.exception.InvalidStatusTransitionException;
 import com.warehouse.exception.ResourceNotFoundException;
+import com.warehouse.service.DeliveryService;
 import com.warehouse.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +27,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ManagerOrderControllerTest {
 
     @Mock OrderService orderService;
+    @Mock DeliveryService deliveryService;
     @InjectMocks ManagerOrderController managerOrderController;
 
     MockMvc mockMvc;
@@ -153,6 +162,100 @@ class ManagerOrderControllerTest {
         mockMvc.perform(post("/api/manager/orders/99/decline")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new DeclineRequest("reason"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void scheduleDelivery_returns201OnSuccess() throws Exception {
+        LocalDate deliveryDate = LocalDate.now().plusDays(3);
+        ScheduleDeliveryRequest request = new ScheduleDeliveryRequest(deliveryDate, List.of(1L));
+        TruckResponse truck = new TruckResponse(1L, "CH-001", "AB-1234", new BigDecimal("20.0"));
+        DeliveryResponse delivery = new DeliveryResponse(1L, 1L, "ORD-TEST", deliveryDate, List.of(truck));
+
+        when(deliveryService.scheduleDelivery(eq(1L), any())).thenReturn(delivery);
+
+        mockMvc.perform(post("/api/manager/orders/1/schedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.orderNumber").value("ORD-TEST"))
+                .andExpect(jsonPath("$.trucks[0].licensePlate").value("AB-1234"));
+    }
+
+    @Test
+    void scheduleDelivery_returns400WhenOrderNotApproved() throws Exception {
+        LocalDate deliveryDate = LocalDate.now().plusDays(3);
+        ScheduleDeliveryRequest request = new ScheduleDeliveryRequest(deliveryDate, List.of(1L));
+
+        when(deliveryService.scheduleDelivery(eq(1L), any()))
+                .thenThrow(new InvalidStatusTransitionException(OrderStatus.AWAITING_APPROVAL, OrderStatus.UNDER_DELIVERY));
+
+        mockMvc.perform(post("/api/manager/orders/1/schedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void scheduleDelivery_returns404WhenOrderNotFound() throws Exception {
+        LocalDate deliveryDate = LocalDate.now().plusDays(3);
+        ScheduleDeliveryRequest request = new ScheduleDeliveryRequest(deliveryDate, List.of(1L));
+
+        when(deliveryService.scheduleDelivery(eq(99L), any()))
+                .thenThrow(new ResourceNotFoundException("Order", 99L));
+
+        mockMvc.perform(post("/api/manager/orders/99/schedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void scheduleDelivery_returns400WhenInvalidRequest() throws Exception {
+        mockMvc.perform(post("/api/manager/orders/1/schedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAvailableDays_returns200WithDays() throws Exception {
+        List<LocalDate> days = List.of(LocalDate.now().plusDays(1), LocalDate.now().plusDays(2));
+        when(deliveryService.getAvailableDays(eq(1L), isNull()))
+                .thenReturn(new AvailableDaysResponse(days));
+
+        mockMvc.perform(get("/api/manager/orders/1/available-days"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.availableDays").isArray())
+                .andExpect(jsonPath("$.availableDays.length()").value(2));
+    }
+
+    @Test
+    void getAvailableDays_returns200WithDaysParam() throws Exception {
+        List<LocalDate> days = List.of(LocalDate.now().plusDays(1));
+        when(deliveryService.getAvailableDays(eq(1L), eq(7)))
+                .thenReturn(new AvailableDaysResponse(days));
+
+        mockMvc.perform(get("/api/manager/orders/1/available-days").param("days", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.availableDays.length()").value(1));
+    }
+
+    @Test
+    void getAvailableDays_returns400WhenOrderNotApproved() throws Exception {
+        when(deliveryService.getAvailableDays(eq(1L), any()))
+                .thenThrow(new BusinessException("Available days can only be queried for APPROVED orders"));
+
+        mockMvc.perform(get("/api/manager/orders/1/available-days"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAvailableDays_returns404WhenOrderNotFound() throws Exception {
+        when(deliveryService.getAvailableDays(eq(99L), any()))
+                .thenThrow(new ResourceNotFoundException("Order", 99L));
+
+        mockMvc.perform(get("/api/manager/orders/99/available-days"))
                 .andExpect(status().isNotFound());
     }
 }

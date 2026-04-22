@@ -7,6 +7,7 @@ import com.warehouse.enums.Role;
 import com.warehouse.exception.BusinessException;
 import com.warehouse.exception.ResourceNotFoundException;
 import com.warehouse.mapper.UserMapper;
+import com.warehouse.repository.OrderRepository;
 import com.warehouse.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.*;
 class UserServiceImplTest {
 
     @Mock UserRepository userRepository;
+    @Mock OrderRepository orderRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock UserMapper userMapper;
 
@@ -72,6 +74,7 @@ class UserServiceImplTest {
     void deleteUser_deletesSuccessfully() {
         User user = User.builder().id(1L).username("todelete").build();
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(orderRepository.existsByClientId(1L)).thenReturn(false);
 
         userService.deleteUser(1L, "admin");
 

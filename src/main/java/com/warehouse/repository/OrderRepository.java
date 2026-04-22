@@ -26,4 +26,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Page<Order> findByStatusSortedBySubmittedDate(@Param("status") OrderStatus status, Pageable pageable);
 
     Optional<Order> findByIdAndClient(Long id, User client);
+
+    boolean existsByClientId(Long clientId);
 }

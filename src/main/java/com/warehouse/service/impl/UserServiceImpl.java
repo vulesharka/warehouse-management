@@ -6,6 +6,7 @@ import com.warehouse.entity.User;
 import com.warehouse.exception.BusinessException;
 import com.warehouse.exception.ResourceNotFoundException;
 import com.warehouse.mapper.UserMapper;
+import com.warehouse.repository.OrderRepository;
 import com.warehouse.repository.UserRepository;
 import com.warehouse.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
@@ -78,6 +80,9 @@ public class UserServiceImpl implements UserService {
         User user = findById(id);
         if (user.getUsername().equals(currentUsername)) {
             throw new BusinessException("You cannot delete your own account");
+        }
+        if (orderRepository.existsByClientId(id)) {
+            throw new BusinessException("Cannot delete user '" + user.getUsername() + "' because they have existing orders.");
         }
         userRepository.delete(user);
         log.info("Deleted user: {}", user.getUsername());
