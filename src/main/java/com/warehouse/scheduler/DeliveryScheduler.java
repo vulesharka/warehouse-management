@@ -21,8 +21,8 @@ public class DeliveryScheduler {
     private final DeliveryRepository deliveryRepository;
     private final OrderRepository orderRepository;
 
-//    @Scheduled(cron = "0 0 0 * * *")
-@Scheduled(cron = "*/10 * * * * *")
+@Scheduled(cron = "0 0 0 * * *")
+//@Scheduled(cron = "*/10 * * * * *")
 @Transactional
     public void fulfillDueDeliveries() {
         List<Delivery> due = deliveryRepository.findDueDeliveries(LocalDate.now());
