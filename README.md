@@ -14,6 +14,7 @@ A RESTful API for managing warehouse inventory, orders, and deliveries, built wi
 - **Log4j2** — logging
 - **Swagger / OpenAPI** — API documentation
 - **JUnit 5 + Mockito** — unit testing
+- **SpringBootTest + MockMvc** — integration testing against real PostgreSQL
 
 ## Roles
 
